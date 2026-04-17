@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToS Decoder</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="html2pdf.min.js"></script>
+</head>
+<body>
+
+  <!-- STATE 1: No API Key -->
+  <div id="state-no-key" class="state hidden">
+    <div class="icon">🔍</div>
+    <h2>ToS Decoder</h2>
+    <p>Add your OpenAI API key to get started.</p>
+    <button id="btn-open-settings" class="btn-primary">Open Settings</button>
+  </div>
+
+  <!-- STATE 2: Not a ToS Page -->
+  <div id="state-not-tos" class="state hidden">
+    <div class="icon">📄</div>
+    <h2>ToS Decoder</h2>
+    <p>This doesn't look like a Terms of Service or Privacy Policy page.</p>
+    <p class="hint">Navigate to a ToS page and click the extension.</p>
+    <button id="btn-analyze-anyway" class="btn-secondary">Analyze Anyway</button>
+  </div>
+
+  <!-- STATE 3: Ready to Analyze -->
+  <div id="state-ready" class="state hidden">
+    <div class="icon">🔍</div>
+    <h2>ToS Decoder</h2>
+    <div class="page-info">
+      <span id="ready-type" class="tag"></span>
+      <span id="ready-wordcount" class="word-count"></span>
+    </div>
+    <p id="ready-title" class="page-title"></p>
+    <button id="btn-analyze" class="btn-primary">Decode This Document</button>
+    <a id="link-settings" href="#" class="settings-link">⚙ Settings</a>
+  </div>
+
+  <!-- STATE 4: Loading -->
+  <div id="state-loading" class="state hidden">
+    <div class="spinner"></div>
+    <p class="loading-text">Reading the fine print...</p>
+    <p class="loading-sub">Powered by GPT-5 Nano</p>
+  </div>
+
+  <!-- STATE 5: Results -->
+  <div id="state-results" class="state hidden">
+
+    <div id="pdf-content-wrapper" style="background-color: #0f0f1a; padding: 10px;">
+      <!-- Risk Badge -->
+      <div id="risk-badge" class="risk-badge">
+        <span id="risk-icon"></span>
+        <div class="risk-text">
+          <span id="risk-label"></span>
+          <span id="risk-reason"></span>
+        </div>
+      </div>
+
+      <!-- TL;DR -->
+      <div class="tldr-box">
+        <strong>TL;DR</strong>
+        <p id="tldr-text"></p>
+      </div>
+
+      <!-- Accordion Sections -->
+      <div class="accordion" style="margin-bottom: 20px;">
+
+        <div class="accordion-item" id="section-redflags">
+          <button class="accordion-header">
+            🚩 Red Flags <span class="badge" id="badge-redflags"></span>
+          </button>
+          <div class="accordion-body" id="body-redflags"></div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header">
+            📊 Data Collected <span class="badge" id="badge-data"></span>
+          </button>
+          <div class="accordion-body" id="body-data"></div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header">
+            ⚖️ Rights You Waive <span class="badge" id="badge-rights"></span>
+          </button>
+          <div class="accordion-body" id="body-rights"></div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header">
+            🔄 Auto-Renewals & Billing
+            <span class="badge" id="badge-billing"></span>
+          </button>
+          <div class="accordion-body" id="body-billing"></div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header">
+            🤝 Third-Party Sharing
+            <span class="badge" id="badge-sharing"></span>
+          </button>
+          <div class="accordion-body" id="body-sharing"></div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-header">
+            ✅ What They Do Right
+            <span class="badge" id="badge-positives"></span>
+          </button>
+          <div class="accordion-body" id="body-positives"></div>
+        </div>
+
+      </div>
+
+      <!-- Eval Panel — hidden until eval completes (MOVED TO BOTTOM) -->
+      <div id="eval-panel" class="eval-panel hidden">
+        <div class="eval-header">
+          <span id="confidence-emoji"></span>
+          <div class="eval-title">
+            <span id="confidence-label"></span>
+            <span class="eval-subtitle">Auto-evaluated</span>
+          </div>
+          <span id="confidence-score" class="confidence-score"></span>
+          <span class="confidence-max">/100</span>
+          <button class="eval-toggle" id="eval-toggle">▾</button>
+        </div>
+
+        <div id="eval-details" class="eval-details hidden">
+          <div class="score-row">
+            <span class="score-label">Hallucination Check</span>
+            <div class="score-track">
+              <div id="bar-hallucination" class="score-bar"></div>
+            </div>
+            <span class="score-weight">40%</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Analysis Quality</span>
+            <div class="score-track">
+              <div id="bar-judge" class="score-bar"></div>
+            </div>
+            <span class="score-weight">35%</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Self-Consistency</span>
+            <div class="score-track">
+              <div id="bar-consistency" class="score-bar"></div>
+            </div>
+            <span class="score-weight">25%</span>
+          </div>
+          <p id="consistency-result" class="check-result"></p>
+          <p id="judge-feedback" class="judge-feedback"></p>
+          <div id="missed-findings" class="missed-findings hidden"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="result-footer">
+      <span id="token-count"></span>
+      <div>
+        <button id="btn-download-pdf" class="btn-secondary" style="display:inline-block; margin:0 4px; padding:4px 8px; font-size:11px; width:auto;">PDF</button>
+        <button id="btn-reanalyze" class="btn-ghost">↺ Re-analyze</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STATE 6: Error -->
+  <div id="state-error" class="state hidden">
+    <div class="icon">⚠️</div>
+    <p id="error-message"></p>
+    <button id="btn-retry" class="btn-primary">Try Again</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
