@@ -89,6 +89,7 @@ async function runAnalysis(pageData) {
 
   // Handle new primary result structure or fallback
   const analysis = result.type === 'PRIMARY_RESULT' ? result.analysis : result;
+  window._latestAnalysis = analysis;
   renderResults(analysis);
 }
 
@@ -100,6 +101,7 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 function renderEvalResults(evalResult) {
+  window._latestEval = evalResult;
   const panel = document.getElementById('eval-panel');
   if (panel) panel.classList.remove('hidden');
 
@@ -292,19 +294,58 @@ document.addEventListener('click', async (e) => {
     window.location.reload();
   }
   if (e.target.id === 'btn-download-pdf') {
-    const element = document.getElementById('pdf-content-wrapper');
-    // Open all accordions before printing
-    document.querySelectorAll('.accordion-body').forEach(el => el.classList.add('open'));
-    document.getElementById('eval-details')?.classList.remove('hidden');
-    
+    if (!window._latestAnalysis) return;
+    const a = window._latestAnalysis;
+    const ev = window._latestEval || {};
+
+    const container = document.createElement('div');
+    container.style.fontFamily = 'Helvetica, Arial, sans-serif';
+    container.style.color = '#333';
+    container.style.padding = '20px';
+    container.style.lineHeight = '1.5';
+
+    let html = `
+      <h1 style="color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">ToS Decoder Audit Report</h1>
+      <p><strong>URL/Title:</strong> ${window._pageData?.title || 'Unknown'}</p>
+      <p><strong>Risk Rating:</strong> ${a.riskRating.toUpperCase()}</p>
+      <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin-bottom: 20px;">
+        <strong>TL;DR:</strong> ${a.tldr}
+      </div>
+    `;
+
+    const addSection = (title, items) => {
+      if (!items || items.length === 0) return;
+      html += `<h3 style="color: #34495e; margin-top: 20px;">${title}</h3><ul style="margin: 0; padding-left: 20px;">`;
+      items.forEach(item => {
+        const text = typeof item === 'string' ? item : (item.flag || `<strong>${item.item}:</strong> ${item.detail}`);
+        html += `<li style="margin-bottom: 8px;">${text}</li>`;
+      });
+      html += `</ul>`;
+    };
+
+    addSection('🚩 Red Flags', a.redFlags);
+    addSection('📊 Data Collected', a.dataCollected);
+    addSection('⚖️ Rights Waived', a.rightsWaived);
+    addSection('🔄 Auto-Renewals & Billing', a.autoRenewals);
+    addSection('🤝 Third-Party Sharing', a.dataSharingThirdParties);
+    addSection('✅ Positives', a.positives);
+
+    if (ev.success) {
+      html += `
+        <h3 style="color: #34495e; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">AI Evaluation Results</h3>
+        <p><strong>Confidence Score:</strong> ${ev.confidence.score}/100 (${ev.confidence.grade.label})</p>
+        <p><strong>Feedback:</strong> ${ev.judge.overallFeedback}</p>
+      `;
+    }
+
+    container.innerHTML = html;
+
     html2pdf().set({
-      margin: 10,
+      margin: 15,
       filename: 'ToS_Decoder_Report.pdf',
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(element).save().then(() => {
-        // Reset some accordions if we want, but it's fine
-    });
+    }).from(container).save();
   }
 });
