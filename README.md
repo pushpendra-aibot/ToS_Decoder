@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  📺 <strong><a href="[INSERT_YOUTUBE_LINK_HERE]">Watch the full video breakdown on YouTube!</a></strong>
+  📺 <strong><a href="[https://www.youtube.com/watch?v=fS1mu7xIo3E]">Watch the full video breakdown on YouTube!</a></strong>
 </p>
 
 **ToS Decoder** is a Chrome Extension that uses AI to instantly read and decode any Terms of Service, Privacy Policy, or End-User License Agreement (EULA) into plain English. Never blindly agree to terms again without knowing exactly what data you are giving up, what rights you are waiving, and your genuine risk exposure!
