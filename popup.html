@@ -43,7 +43,7 @@
   <div id="state-loading" class="state hidden">
     <div class="spinner"></div>
     <p class="loading-text">Reading the fine print...</p>
-    <p class="loading-sub">Powered by GPT-5 Nano<br/>(Auto-retrying if confidence &lt; 75%)</p>
+    <p class="loading-sub">Powered by GPT-5 Nano</p>
   </div>
 
   <!-- STATE 5: Results -->
@@ -115,46 +115,7 @@
 
       </div>
 
-      <!-- Eval Panel — hidden until eval completes (MOVED TO BOTTOM) -->
-      <div id="eval-panel" class="eval-panel hidden">
-        <div class="eval-header">
-          <span id="confidence-emoji"></span>
-          <div class="eval-title">
-            <span id="confidence-label"></span>
-            <span class="eval-subtitle">Auto-evaluated</span>
-          </div>
-          <span id="confidence-score" class="confidence-score"></span>
-          <span class="confidence-max">/100</span>
-          <button class="eval-toggle" id="eval-toggle">▾</button>
-        </div>
 
-        <div id="eval-details" class="eval-details hidden">
-          <div class="score-row">
-            <span class="score-label">Hallucination Check</span>
-            <div class="score-track">
-              <div id="bar-hallucination" class="score-bar"></div>
-            </div>
-            <span class="score-weight">40%</span>
-          </div>
-          <div class="score-row">
-            <span class="score-label">Analysis Quality</span>
-            <div class="score-track">
-              <div id="bar-judge" class="score-bar"></div>
-            </div>
-            <span class="score-weight">35%</span>
-          </div>
-          <div class="score-row">
-            <span class="score-label">Self-Consistency</span>
-            <div class="score-track">
-              <div id="bar-consistency" class="score-bar"></div>
-            </div>
-            <span class="score-weight">25%</span>
-          </div>
-          <p id="consistency-result" class="check-result"></p>
-          <p id="judge-feedback" class="judge-feedback"></p>
-          <div id="missed-findings" class="missed-findings hidden"></div>
-        </div>
-      </div>
 
     </div>
 

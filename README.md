@@ -23,7 +23,7 @@ Never blindly agree to terms again without knowing exactly what data you are giv
 * 🛡️ **Risk Profiling**: Provides a strict baseline risk rating (🟢 Low / 🟡 Medium / 🔴 High).
 * 🚩 **Red Flag Extraction**: Plainly surfaces aggressive clauses, ridiculous data collection specs, and auto-renewal traps.
 * 📝 **Live Action Logging**: The agent transparently logs its step-by-step thoughts and tool executions locally to `agent_logs.txt`.
-* 📄 **Native PDF Export**: Saves the entire evaluated legal audit to a neat, high-quality PDF to keep for your records using `html2pdf.js`. 
+* 📄 **Native PDF Export**: Saves the entire legal audit to a neat, high-quality PDF to keep for your records using `html2pdf.js`. 
 
 ## 🛠 Installation
 

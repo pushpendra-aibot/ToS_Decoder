@@ -87,79 +87,10 @@ async function runAnalysis(pageData) {
     return;
   }
 
-  // Handle new final result structure or fallback
-  const analysis = result.type === 'FINAL_RESULT' ? result.analysis : (result.type === 'PRIMARY_RESULT' ? result.analysis : result);
+  const analysis = result.analysis || result;
   window._latestAnalysis = analysis;
   renderResults(analysis);
-
-  if (result.type === 'FINAL_RESULT' && result.evalResult) {
-    renderEvalResults(result.evalResult);
-  }
 }
-
-// ── Eval Listener & Rendering ─────────────────────────────────────────────────
-// (EVAL_RESULT listener removed since evaluation is now synchronous)
-
-function renderEvalResults(evalResult) {
-  window._latestEval = evalResult;
-  const panel = document.getElementById('eval-panel');
-  if (panel) panel.classList.remove('hidden');
-
-  if (!evalResult.success) {
-    document.getElementById('confidence-label').textContent = 'Eval Failed';
-    return;
-  }
-
-  const { confidence, hallucination, judge, consistency, missedFindings } = evalResult;
-
-  document.getElementById('confidence-score').textContent = confidence.score;
-  document.getElementById('confidence-label').textContent = confidence.grade.label;
-  document.getElementById('confidence-emoji').textContent = confidence.grade.emoji;
-  document.getElementById('eval-panel').className = `eval-panel eval-${confidence.grade.color}`;
-
-  renderScoreBar('bar-hallucination', confidence.breakdown.hallucination.score);
-  renderScoreBar('bar-judge',         confidence.breakdown.judgeQuality.score);
-  renderScoreBar('bar-consistency',   confidence.breakdown.consistency.score);
-
-  if (hallucination.details) {
-    hallucination.details.forEach(item => {
-      const flagEls = document.querySelectorAll('.item-text');
-      flagEls.forEach(el => {
-        if (el.textContent.includes(item.flag.slice(0, 30))) {
-          const badge = document.createElement('span');
-          badge.className = `verify-badge ${item.status}`;
-          badge.textContent = item.status === 'verified' ? '✓ Verified' : '⚠ Unverified';
-          el.appendChild(badge);
-        }
-      });
-    });
-  }
-
-  if (missedFindings && missedFindings.length > 0) {
-    const missedEl = document.getElementById('missed-findings');
-    missedEl.classList.remove('hidden');
-    missedEl.innerHTML = `<strong>⚠ Possibly missed:</strong> ${missedFindings.join(', ')}`;
-  }
-
-  const consistencyEl = document.getElementById('consistency-result');
-  consistencyEl.textContent = consistency.matches
-    ? '✓ Risk rating confirmed by second pass'
-    : `⚠ Second pass rated this as "${consistency.rating}" — treat with caution`;
-  consistencyEl.className = consistency.matches ? 'check-pass' : 'check-fail';
-
-  document.getElementById('judge-feedback').textContent = judge.overallFeedback;
-}
-
-function renderScoreBar(barId, score) {
-  const bar = document.getElementById(barId);
-  if (!bar) return;
-  bar.style.width = `${score}%`;
-  bar.className = `score-bar ${score >= 75 ? 'bar-green' : score >= 50 ? 'bar-yellow' : 'bar-red'}`;
-}
-
-document.getElementById('eval-toggle')?.addEventListener('click', () => {
-  document.getElementById('eval-details')?.classList.toggle('hidden');
-});
 
 // ── Render Results ────────────────────────────────────────────────────────────
 
@@ -271,20 +202,9 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('click', async (e) => {
   if (e.target.id === 'btn-analyze' || e.target.id === 'btn-analyze-anyway') {
-    // Reset eval panel if it was open
-    const panel = document.getElementById('eval-panel');
-    if (panel) {
-      panel.classList.add('hidden');
-      panel.className = 'eval-panel';
-    }
     await runAnalysis(window._pageData);
   }
   if (e.target.id === 'btn-reanalyze') {
-    const panel = document.getElementById('eval-panel');
-    if (panel) {
-      panel.classList.add('hidden');
-      panel.className = 'eval-panel';
-    }
     await runAnalysis(window._pageData);
   }
   if (e.target.id === 'btn-open-settings' || e.target.id === 'link-settings') {
@@ -296,7 +216,6 @@ document.addEventListener('click', async (e) => {
   if (e.target.id === 'btn-download-pdf') {
     if (!window._latestAnalysis) return;
     const a = window._latestAnalysis;
-    const ev = window._latestEval || {};
 
     const container = document.createElement('div');
     container.style.fontFamily = 'Helvetica, Arial, sans-serif';
@@ -329,14 +248,6 @@ document.addEventListener('click', async (e) => {
     addSection('🔄 Auto-Renewals & Billing', a.autoRenewals);
     addSection('🤝 Third-Party Sharing', a.dataSharingThirdParties);
     addSection('✅ Positives', a.positives);
-
-    if (ev.success) {
-      html += `
-        <h3 style="color: #34495e; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">AI Evaluation Results</h3>
-        <p><strong>Confidence Score:</strong> ${ev.confidence.score}/100 (${ev.confidence.grade.label})</p>
-        <p><strong>Feedback:</strong> ${ev.judge.overallFeedback}</p>
-      `;
-    }
 
     container.innerHTML = html;
 

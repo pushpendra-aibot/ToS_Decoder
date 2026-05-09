@@ -1,5 +1,4 @@
 // background.js
-importScripts('evaluator.js');
 
 const SYSTEM_PROMPT = `You are a legal expert and consumer rights advocate who specialises in making Terms of Service and Privacy Policies understandable to everyday people. Your job is to analyse legal documents and surface what actually matters to users. Always respond with valid JSON only. No markdown, no explanation outside the JSON.`;
 
@@ -54,34 +53,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function runAnalysisWithEval({ text, title, apiKey }) {
-  let bestAnalysis = null;
-  let bestEval = null;
+  // Step 1: Run primary analysis
+  const primaryAnalysis = await analyzeTos({ text, title, apiKey });
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    console.log(`Running analysis attempt ${attempt}/3...`);
-    // Step 1: Run primary analysis
-    const primaryAnalysis = await analyzeTos({ text, title, apiKey });
-
-    // Step 2: Await eval pipeline
-    const evalResult = await runEvalPipeline(text, primaryAnalysis, apiKey);
-    
-    bestAnalysis = primaryAnalysis;
-    bestEval = evalResult;
-
-    // Check if score is good enough
-    if (evalResult.success && evalResult.confidence.score >= 75) {
-      console.log(`Success! Confidence ${evalResult.confidence.score} is >= 75.`);
-      break;
-    } else {
-      console.log(`Confidence was ${evalResult.confidence?.score}. Retrying if possible...`);
-    }
-  }
-
-  // Return final bundled result
   return {
-    type: 'FINAL_RESULT',
-    analysis: bestAnalysis,
-    evalResult: bestEval
+    type: 'PRIMARY_RESULT',
+    analysis: primaryAnalysis
   };
 }
 
