@@ -68,33 +68,31 @@ async function runAnalysisWithEval({ text, title, apiKey }) {
 }
 
 async function analyzeTos({ text, title, apiKey }) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('http://localhost:8000/analyze', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'gpt-5-nano',
-      response_format: { type: 'json_object' },
-      temperature: 1,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: buildUserPrompt(text, title) }
-      ]
+      text: text,
+      title: title,
+      apiKey: apiKey
     })
   });
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || `API error ${response.status}`);
+    let errMsg = `API error ${response.status}`;
+    try {
+        const err = await response.json();
+        errMsg = err.detail || err.error?.message || errMsg;
+    } catch (e) {}
+    throw new Error(errMsg);
   }
 
-  const data = await response.json();
-  const analysis = JSON.parse(data.choices[0].message.content);
+  const analysis = await response.json();
 
   // Attach metadata
-  analysis.tokensUsed = data.usage?.total_tokens || 0;
+  analysis.tokensUsed = analysis.tokensUsed || 0;
   analysis.analyzedAt = new Date().toISOString();
 
   return analysis;
