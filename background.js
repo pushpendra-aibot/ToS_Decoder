@@ -54,16 +54,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function runAnalysisWithEval({ text, title, apiKey }) {
-  // Step 1: Run primary analysis
-  const primaryAnalysis = await analyzeTos({ text, title, apiKey });
+  let bestAnalysis = null;
+  let bestEval = null;
 
-  // Trigger eval in background (don't await)
-  runEvalAndNotify(text, primaryAnalysis, apiKey);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    console.log(`Running analysis attempt ${attempt}/3...`);
+    // Step 1: Run primary analysis
+    const primaryAnalysis = await analyzeTos({ text, title, apiKey });
 
-  // Return primary analysis immediately
+    // Step 2: Await eval pipeline
+    const evalResult = await runEvalPipeline(text, primaryAnalysis, apiKey);
+    
+    bestAnalysis = primaryAnalysis;
+    bestEval = evalResult;
+
+    // Check if score is good enough
+    if (evalResult.success && evalResult.confidence.score >= 75) {
+      console.log(`Success! Confidence ${evalResult.confidence.score} is >= 75.`);
+      break;
+    } else {
+      console.log(`Confidence was ${evalResult.confidence?.score}. Retrying if possible...`);
+    }
+  }
+
+  // Return final bundled result
   return {
-    type: 'PRIMARY_RESULT',
-    analysis: primaryAnalysis
+    type: 'FINAL_RESULT',
+    analysis: bestAnalysis,
+    evalResult: bestEval
   };
 }
 
@@ -98,19 +116,4 @@ async function analyzeTos({ text, title, apiKey }) {
   return analysis;
 }
 
-async function runEvalAndNotify(sourceText, analysis, apiKey) {
-  try {
-    const evalResult = await runEvalPipeline(sourceText, analysis, apiKey);
-    
-    // Send eval results to popup when ready
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      // Background scripts can just broadcast it out directly
-      chrome.runtime.sendMessage({
-        type: 'EVAL_RESULT',
-        evalResult
-      }).catch(err => console.log('Popup closed before eval finished.'));
-    });
-  } catch (e) {
-    console.error('Eval pipeline failed:', e);
-  }
-}
+// (runEvalAndNotify removed since evaluation is now synchronous)

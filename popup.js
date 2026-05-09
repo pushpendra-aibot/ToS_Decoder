@@ -87,18 +87,18 @@ async function runAnalysis(pageData) {
     return;
   }
 
-  // Handle new primary result structure or fallback
-  const analysis = result.type === 'PRIMARY_RESULT' ? result.analysis : result;
+  // Handle new final result structure or fallback
+  const analysis = result.type === 'FINAL_RESULT' ? result.analysis : (result.type === 'PRIMARY_RESULT' ? result.analysis : result);
   window._latestAnalysis = analysis;
   renderResults(analysis);
+
+  if (result.type === 'FINAL_RESULT' && result.evalResult) {
+    renderEvalResults(result.evalResult);
+  }
 }
 
 // ── Eval Listener & Rendering ─────────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'EVAL_RESULT') {
-    renderEvalResults(message.evalResult);
-  }
-});
+// (EVAL_RESULT listener removed since evaluation is now synchronous)
 
 function renderEvalResults(evalResult) {
   window._latestEval = evalResult;
